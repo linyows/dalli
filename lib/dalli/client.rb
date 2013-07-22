@@ -323,6 +323,51 @@ module Dalli
       end
     end
 
+    def slab_ids
+      stats(:items).each_with_object({}) do |(host, hash), result|
+        result[host] = hash.keys.map { |value|
+          value.scan(/items:(\d+):/)
+        }.flatten.compact.uniq
+      end
+    end
+
+
+    def keys_on_a_host(slab_ids, options = {})
+      p = {
+        host: 'localhost',
+        port: 11211
+      }.merge(options)
+
+      slab_ids.each_with_object([]) { |slab_id, result|
+        cmd = "stats cachedump #{slab_id} 0"
+        ns = namespace ? "#{namespace}:" : nil
+        result << tcp_socket(cmd, *p.values).
+          scan(/^ITEM #{ns}(.+?) \[\d+ b; \d+ s\]\r\n/)
+      }.flatten
+    end
+
+    def keys
+      slab_ids.each_with_object([]) { |(host, slab_ids_on_a_host), result|
+        host, port = host.scan(/(.+):(\d+)/).last
+        result << keys_on_a_host(slab_ids_on_a_host, host: host, port: port)
+      }.flatten
+    end
+
+    def tcp_socket(cmd, host, port)
+      data = ''
+      sock = TCPSocket.new(host, port)
+      sock.print("#{cmd}\r\n")
+      sock.flush
+      stats = sock.gets
+      while true
+        data += stats
+        break if stats.strip == 'END'
+        stats = sock.gets
+      end
+      sock.close
+      data
+    end
+
     ##
     # Close our connection to each server.
     # If you perform another operation after this, the connections will be re-established.
