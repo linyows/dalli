@@ -222,6 +222,10 @@ module ActiveSupport
         Dalli.logger = new_logger
       end
 
+      def keys
+        @data.keys
+      end
+
       protected
 
       # Read an entry from the cache.
