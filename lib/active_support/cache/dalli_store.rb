@@ -206,8 +206,8 @@ module ActiveSupport
       end
 
       # Get the statistics from the memcached servers.
-      def stats
-        @data.stats
+      def stats(type = nil)
+        @data.stats(type)
       end
 
       def reset
