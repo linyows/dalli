@@ -228,7 +228,7 @@ module ActiveSupport
 
       def delete_matched(matcher, options = nil)
         @data.keys.each do |key|
-          delete(key, options) if key.match(matcher)
+          delete(key, options) if key.force_encoding('UTF-8').match(matcher)
         end
       rescue Dalli::DalliError => e
         logger.error("DalliError: #{e.message}") if logger
